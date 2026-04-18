@@ -5,6 +5,15 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.model_selection import train_test_split
 from core.metrics import compute_fairness_metrics
 
+
+def safe_round(value, ndigits=4):
+    if isinstance(value, list):
+        return [safe_round(v, ndigits) for v in value]
+    try:
+        return round(float(value), ndigits)
+    except Exception:
+        return value
+
 def remediate(df: pd.DataFrame, protected_col: str, target_col: str) -> dict:
     
     # get before metrics first
@@ -113,10 +122,10 @@ def _fairness_constrained_model(df: pd.DataFrame, protected_col: str, target_col
         tn = int(((predicted == 0) & (actual == 0)).sum())
         group_metrics[str(group_val)] = {
             "count": int(len(group_df)),
-            "positive_rate": float(round(predicted.mean(), 4)),
-            "tpr": float(round(tp / (tp + fn + 1e-9), 4)),
-            "fpr": float(round(fp / (fp + tn + 1e-9), 4)),
-            "accuracy": float(round((predicted == actual).mean(), 4))
+            "positive_rate": float(safe_round(predicted.mean(), 4)),
+            "tpr": float(safe_round(tp / (tp + fn + 1e-9), 4)),
+            "fpr": float(safe_round(fp / (fp + tn + 1e-9), 4)),
+            "accuracy": float(safe_round((predicted == actual).mean(), 4))
         }
 
     fairness = _compute_fairness_scores(group_metrics)
@@ -125,7 +134,7 @@ def _fairness_constrained_model(df: pd.DataFrame, protected_col: str, target_col
         "target_column": target_col,
         "group_metrics": group_metrics,
         "fairness_scores": fairness,
-        "model_accuracy": float(round((y_pred == y_test.values).mean(), 4))
+        "model_accuracy": float(safe_round((y_pred == y_test.values).mean(), 4))
     }
 
 def _pick_best(reweigh_result: dict, constrained_result: dict) -> dict:

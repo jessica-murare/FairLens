@@ -17,6 +17,7 @@ export default function Upload() {
       const res = await uploadDataset(file)
       setResult(res.data)
       localStorage.setItem("fairlens_dataset", JSON.stringify(res.data))
+      localStorage.removeItem("fairlens_audit")
     } catch (e) {
       setError(e.response?.data?.detail || "Upload failed")
     }

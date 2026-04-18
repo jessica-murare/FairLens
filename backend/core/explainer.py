@@ -5,6 +5,15 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 
+
+def safe_round(value, ndigits=4):
+    if isinstance(value, list):
+        return [safe_round(v, ndigits) for v in value]
+    try:
+        return round(float(value), ndigits)
+    except Exception:
+        return value
+
 def compute_shap_explanation(df: pd.DataFrame, protected_col: str, target_col: str) -> dict:
     df = df.copy().dropna(subset=[protected_col, target_col])
 
@@ -42,16 +51,16 @@ def compute_shap_explanation(df: pd.DataFrame, protected_col: str, target_col: s
         if abs(corr) > 0.1:
             bias_drivers.append({
                 "feature": feat,
-                "shap_importance": round(feature_importance.get(feat, 0), 4),
-                "protected_correlation": round(corr, 4),
+                "shap_importance": safe_round(feature_importance.get(feat, 0), 4),
+                "protected_correlation": safe_round(corr, 4),
                 "bias_risk": "HIGH" if abs(corr) > 0.3 else "MEDIUM"
             })
 
     bias_drivers = sorted(bias_drivers, key=lambda x: abs(x["protected_correlation"]), reverse=True)
 
     return {
-        "top_features": [{"feature": k, "importance": round(v, 4)} for k, v in top_features],
-        "all_feature_importance": {k: round(v, 4) for k, v in feature_importance.items()},
+        "top_features": [{"feature": k, "importance": safe_round(v, 4)} for k, v in top_features],
+        "all_feature_importance": {k: safe_round(v, 4) for k, v in feature_importance.items()},
         "bias_drivers": bias_drivers[:5],
         "protected_column": protected_col,
         "summary": _shap_summary(bias_drivers, top_features)

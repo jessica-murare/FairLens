@@ -5,6 +5,15 @@ from sklearn.preprocessing import LabelEncoder
 from itertools import combinations
 from sklearn.model_selection import train_test_split
 
+
+def safe_round(value, ndigits=4):
+    if isinstance(value, list):
+        return [safe_round(v, ndigits) for v in value]
+    try:
+        return round(float(value), ndigits)
+    except Exception:
+        return value
+
 def compute_fairness_metrics(df: pd.DataFrame, protected_col: str, target_col: str) -> dict:
     df = df.copy().dropna(subset=[protected_col, target_col])
     
@@ -44,10 +53,10 @@ def compute_fairness_metrics(df: pd.DataFrame, protected_col: str, target_col: s
 
         metrics_per_group[str(group_val)] = {
             "count": len(group_df),
-            "positive_rate": round(predicted.mean(), 4),
-            "tpr": round(tp / (tp + fn + 1e-9), 4),   # true positive rate
-            "fpr": round(fp / (fp + tn + 1e-9), 4),   # false positive rate
-            "accuracy": round((predicted == actual).mean(), 4)
+            "positive_rate": safe_round(predicted.mean(), 4),
+            "tpr": safe_round(tp / (tp + fn + 1e-9), 4),   # true positive rate
+            "fpr": safe_round(fp / (fp + tn + 1e-9), 4),   # false positive rate
+            "accuracy": safe_round((predicted == actual).mean(), 4)
         }
 
     return {
@@ -55,7 +64,7 @@ def compute_fairness_metrics(df: pd.DataFrame, protected_col: str, target_col: s
         "target_column": target_col,
         "group_metrics": metrics_per_group,
         "fairness_scores": _compute_fairness_scores(metrics_per_group),
-        "model_accuracy": round((y_pred == y_test.values).mean(), 4)
+        "model_accuracy": safe_round((y_pred == y_test.values).mean(), 4)
     }
 
 def _compute_fairness_scores(group_metrics: dict) -> dict:
@@ -114,7 +123,7 @@ def compute_intersectional_bias(df: pd.DataFrame, protected_cols: list, target_c
         results[col] = {
             "type": "single",
             "positive_rates": pos_rates,
-            "gap": round(max(pos_rates.values()) - min(pos_rates.values()), 4)
+            "gap": safe_round(max(pos_rates.values()) - min(pos_rates.values()), 4)
         }
 
     # pairwise intersectional analysis
@@ -127,7 +136,7 @@ def compute_intersectional_bias(df: pd.DataFrame, protected_cols: list, target_c
             if len(grp) >= 10:  # skip tiny groups
                 group_rates[str(name)] = {
                     "count": len(grp),
-                    "positive_rate": round(grp[target_col].mean(), 4)
+                    "positive_rate": safe_round(grp[target_col].mean(), 4)
                 }
 
         if group_rates:
@@ -135,7 +144,7 @@ def compute_intersectional_bias(df: pd.DataFrame, protected_cols: list, target_c
             results[key] = {
                 "type": "intersectional",
                 "groups": group_rates,
-                "gap": round(max(rates) - min(rates), 4),
+                "gap": safe_round(max(rates) - min(rates), 4),
                 "most_privileged": max(group_rates, key=lambda k: group_rates[k]["positive_rate"]),
                 "most_disadvantaged": min(group_rates, key=lambda k: group_rates[k]["positive_rate"]),
                 "bias_verdict": "BIASED" if (max(rates) - min(rates)) > 0.1 else "FAIR"
