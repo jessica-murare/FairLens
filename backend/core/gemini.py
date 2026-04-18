@@ -2,16 +2,28 @@ import os
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-load_dotenv()
-api_key = os.getenv("GEMINI_API_KEY")
-if api_key:
+def get_gemini_model():
+    load_dotenv()  # works locally, ignored on HF Spaces
+
+    api_key = os.getenv("GEMINI_API_KEY")
+
+    if not api_key:
+        print("⚠️ GEMINI_API_KEY not found. Running without AI.")
+        return None
+
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel("gemini-2.5-flash")
-else:
-    model = None
+    return genai.GenerativeModel("gemini-2.5-flash")  # stable + fast
+
+# initialize once
+model = get_gemini_model()
 
 
 def explain_bias_report(metrics: dict, intersectional: dict = None) -> dict:
+    if model is None:
+        return {
+            "raw": "AI explanation unavailable — API key not configured.",
+            "sections": {}
+        }
     fairness_scores = metrics.get("fairness_scores", {})
     group_metrics = metrics.get("group_metrics", {})
 
@@ -79,6 +91,8 @@ Be direct, factual, and avoid jargon. Write for a business audience.
     }
 
 def explain_remediation(before: dict, after: dict) -> str:
+    if model is None:
+        return "AI explanation unavailable — API key not configured."
     prompt = f"""
 Explain in 3 sentences what changed after bias remediation.
 Before: demographic parity gap = {before.get("fairness_scores", {}).get("demographic_parity_gap")}, verdict = {before.get("fairness_scores", {}).get("bias_verdict")}
