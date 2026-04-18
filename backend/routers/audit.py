@@ -4,6 +4,8 @@ from core.metrics import compute_fairness_metrics
 from routers.ingest import upload_datasets
 from core.metrics import compute_fairness_metrics, compute_intersectional_bias
 from core.gemini import explain_bias_report
+from core.explainer import compute_shap_explanation
+
 
 router = APIRouter()
 
@@ -60,28 +62,35 @@ def run_full_audit(req: FullAuditRequest):
     if df is None:
         raise HTTPException(status_code=404, detail="Dataset not found. Re-upload.")
 
-    # run standard metrics on first protected col
     primary_col = req.protected_columns[0]
     metrics = compute_fairness_metrics(df, primary_col, req.target_column)
 
-    # run intersectional if multiple protected cols
     intersectional = None
     if len(req.protected_columns) > 1:
         intersectional = compute_intersectional_bias(
             df, req.protected_columns, req.target_column
         )
 
-    # gemini explanation
-    try:
-        explanation = explain_bias_report(metrics, intersectional)
-    except Exception as e:
-        explanation = {
-            "raw": f"Explanation unavailable: {str(e)}",
-            "sections": {}
-        }
+    shap_result = compute_shap_explanation(df, primary_col, req.target_column)
+    explanation = explain_bias_report(metrics, intersectional)
 
     return {
         "metrics": metrics,
         "intersectional": intersectional,
+        "shap": shap_result,
         "explanation": explanation
     }
+
+class ExplainRequest(BaseModel):
+    dataset_id: str
+    protected_column: str
+    target_column: str
+
+@router.post("/explain")
+def run_explanation(req: ExplainRequest):
+    df = upload_datasets.get(req.dataset_id)
+    if df is None:
+        raise HTTPException(status_code=404, detail="Dataset not found. Re-upload.")
+    
+    result = compute_shap_explanation(df, req.protected_column, req.target_column)
+    return result
