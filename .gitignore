@@ -1,0 +1,114 @@
+.env
+# =========================
+
+# Python / Backend
+
+# =========================
+
+**pycache**/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+
+.venv/
+venv/
+env/
+
+# Environment variables
+
+.env
+
+# Logs
+
+*.log
+
+# Jupyter Notebook checkpoints
+
+.ipynb_checkpoints/
+
+# =========================
+
+# Data files (VERY IMPORTANT for your project)
+
+# =========================
+
+data/
+*.csv
+*.xlsx
+*.json
+
+# =========================
+
+# Model files (if you add ML models later)
+
+# =========================
+
+*.pkl
+*.joblib
+*.h5
+
+# =========================
+
+# FastAPI / Build / Cache
+
+# =========================
+
+.cache/
+*.db
+
+# =========================
+
+# Node / Frontend (React + Vite)
+
+# =========================
+
+node_modules/
+dist/
+build/
+
+# Vite cache
+
+.vite/
+
+# Logs
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =========================
+
+# OS files
+
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+
+# VS Code / Editor
+
+# =========================
+
+.vscode/
+.idea/
+
+# =========================
+
+# Docker (optional)
+
+# =========================
+
+*.tar
+
+# =========================
+
+# Misc
+
+# =========================
+
+*.tmp
+*.swp
